@@ -21,9 +21,9 @@ fragment float4 foldFragment(VertexOut in [[stage_in]],
     // lid supplies the motion; software only changes the glass treatment.
     float2 sampleUV = uv;
 
-    float coverage = smoothstep(-0.2, 0.2, u.progress - uv.y);
     float onset = smoothstep(0.0, 0.35, u.progress);
-    float lod = u.blur * coverage * onset;
+    float verticalStrength = mix(1.0, 0.75, smoothstep(0.0, 1.0, uv.y));
+    float lod = u.blur * verticalStrength * onset;
     float2 texel = exp2(lod) / float2(image.get_width(), image.get_height()) * 0.55;
     float4 color = image.sample(s, sampleUV, level(lod)) * 0.40;
     color += image.sample(s, sampleUV + float2( texel.x,  texel.y), level(lod)) * 0.15;
@@ -32,7 +32,8 @@ fragment float4 foldFragment(VertexOut in [[stage_in]],
     color += image.sample(s, sampleUV + float2(-texel.x, -texel.y), level(lod)) * 0.15;
 
     color.rgb = mix(color.rgb, float3(0.48, 0.70, 0.88), u.tint);
-    float localDarkness = u.darkness * mix(0.15, 1.0, coverage);
+    float blackoutConvergence = smoothstep(0.82, 1.0, u.progress);
+    float localDarkness = u.darkness * mix(verticalStrength, 1.0, blackoutConvergence);
     color.rgb *= 1.0 - localDarkness;
     return float4(color.rgb, 1);
 }

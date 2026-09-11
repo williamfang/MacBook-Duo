@@ -53,6 +53,7 @@ func runParameterTests() {
     let centerBlur = middle.blurLOD(atVerticalPosition: 0.5)
     let bottomBlur = middle.blurLOD(atVerticalPosition: 1)
     expect(topBlur > centerBlur && centerBlur > bottomBlur, "blur progresses smoothly from top edge downward")
+    expect(bottomBlur / topBlur >= 0.70 && bottomBlur / topBlur <= 0.80, "top-to-bottom blur difference stays near 25 percent")
     let closed = FoldParameters.make(angle: 15)
     expect(close(closed.progress, 1), "blackout angle completes progress")
     expect(closed.darkness > 0.9, "blackout angle is dark")
