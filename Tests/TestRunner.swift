@@ -47,7 +47,7 @@ func runParameterTests() {
     expect(close(open.blurRadius, 0), "trigger angle is sharp")
     let middle = FoldParameters.make(angle: 50)
     expect(close(middle.progress, 0.5), "mid angle maps to half progress")
-    expect(middle.verticalScale > 0.7 && middle.verticalScale < 0.8, "mid angle has physical projection")
+    expect(close(middle.contentScale, 1), "fold effect never changes screen-edge geometry")
     let closed = FoldParameters.make(angle: 15)
     expect(close(closed.progress, 1), "blackout angle completes progress")
     expect(closed.darkness > 0.9, "blackout angle is dark")

@@ -2,7 +2,7 @@ import Foundation
 
 public struct FoldParameters: Equatable, Sendable {
     public let progress: Double
-    public let verticalScale: Double
+    public let contentScale: Double
     public let blurRadius: Double
     public let darkness: Double
     public let glassTint: Double
@@ -12,9 +12,9 @@ public struct FoldParameters: Equatable, Sendable {
         let eased = t * t * (3 - 2 * t)
         return .init(
             progress: t,
-            verticalScale: max(sin(max(angle, 0) * .pi / 180), 0.035),
-            blurRadius: 28 * eased,
-            darkness: 0.92 * pow(t, 1.35),
+            contentScale: 1,
+            blurRadius: 48 * eased,
+            darkness: pow(t, 1.35),
             glassTint: sin(t * .pi) * 0.22
         )
     }

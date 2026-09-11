@@ -5,7 +5,6 @@ import MacBookDuoCore
 final class MetalFoldRenderer: NSObject, MTKViewDelegate {
     struct Uniforms {
         var progress: Float
-        var verticalScale: Float
         var blur: Float
         var darkness: Float
         var tint: Float
@@ -66,7 +65,6 @@ final class MetalFoldRenderer: NSObject, MTKViewDelegate {
               let texture else { return }
         var uniforms = Uniforms(
             progress: Float(parameters.progress),
-            verticalScale: Float(parameters.verticalScale),
             blur: Float(parameters.blurRadius),
             darkness: Float(parameters.darkness),
             tint: Float(parameters.glassTint),

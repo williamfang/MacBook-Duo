@@ -2,6 +2,10 @@ import XCTest
 @testable import MacBookDuoCore
 
 final class FoldStateMachineTests: XCTestCase {
+    func testFoldEffectKeepsDesktopGeometryFixed() {
+        XCTAssertEqual(FoldParameters.make(angle: 50).contentScale, 1)
+    }
+
     func testCrossingTriggerRequestsOneCaptureUntilReset() {
         var model = FoldStateMachine()
         XCTAssertEqual(model.update(angle: 100), .none)
