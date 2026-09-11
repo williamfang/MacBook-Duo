@@ -11,7 +11,7 @@
     <key>CFBundleShortVersionString</key><string>0.1.0</string>
     <key>CFBundleVersion</key><string>1</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
-    <key>LSUIElement</key><true/>
+    <key>LSUIElement</key><false/>
     <key>NSScreenCaptureUsageDescription</key><string>MacBook Duo 需要截取当前桌面的一帧来生成折叠动效。截图仅保存在内存中。</string>
 </dict>
 </plist>

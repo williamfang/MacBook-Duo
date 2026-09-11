@@ -12,6 +12,10 @@ final class AppController: NSObject, NSApplicationDelegate {
     private var permissionItem: NSMenuItem?
     private var enableItem: NSMenuItem?
     private var slider: NSSlider?
+    private var controlWindow: NSWindow?
+    private var windowAngleLabel: NSTextField?
+    private var windowStatusLabel: NSTextField?
+    private var permissionButton: NSButton?
     private var isEnabled = true
     private var captureInFlight = false
     private var captureGeneration: UInt = 0
@@ -21,6 +25,7 @@ final class AppController: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         configureMenu()
+        configureControlWindow()
         sensor.onAngle = { [weak self] angle in self?.receive(angle: angle) }
         sensor.onUnavailable = { [weak self] in self?.cancelOverlay() }
         sensor.start()
@@ -28,6 +33,12 @@ final class AppController: NSObject, NSApplicationDelegate {
             if event.keyCode == 53 { Task { @MainActor in self?.cancelOverlay() } }
         }
         refreshMenu()
+        showControlWindow()
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showControlWindow()
+        return true
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -40,6 +51,7 @@ final class AppController: NSObject, NSApplicationDelegate {
     private func receive(angle: Double) {
         latestAngle = angle
         angleItem?.title = String(format: "屏幕角度  %.1f°", angle)
+        windowAngleLabel?.stringValue = String(format: "当前屏幕角度：%.1f°", angle)
         sensorItem?.title = sensor.status == .connected ? "传感器已连接" : "传感器不可用"
         guard isEnabled else { return }
 
@@ -83,6 +95,7 @@ final class AppController: NSObject, NSApplicationDelegate {
     private func configureMenu() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.image = NSImage(systemSymbolName: "macbook", accessibilityDescription: "MacBook Duo")
+        item.button?.title = " Duo"
         let menu = NSMenu()
         let title = NSMenuItem(title: "MacBook Duo", action: nil, keyEquivalent: "")
         title.isEnabled = false
@@ -129,11 +142,67 @@ final class AppController: NSObject, NSApplicationDelegate {
         statusItem = item
     }
 
+    private func configureControlWindow() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 270),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "MacBook Duo"
+        window.isReleasedWhenClosed = false
+
+        let title = NSTextField(labelWithString: "MacBook Duo 正在运行")
+        title.font = .systemFont(ofSize: 24, weight: .semibold)
+        title.alignment = .center
+
+        let detail = NSTextField(wrappingLabelWithString: "屏幕低于 85° 时自动冻结桌面并启动折叠效果，重新打开到 92° 以上恢复。")
+        detail.alignment = .center
+        detail.textColor = .secondaryLabelColor
+
+        let angle = NSTextField(labelWithString: "当前屏幕角度：正在读取…")
+        angle.font = .monospacedDigitSystemFont(ofSize: 18, weight: .medium)
+        angle.alignment = .center
+        windowAngleLabel = angle
+
+        let status = NSTextField(labelWithString: "正在检查权限和传感器…")
+        status.alignment = .center
+        windowStatusLabel = status
+
+        let permission = NSButton(title: "授予屏幕录制权限", target: self, action: #selector(requestCapturePermission))
+        permission.bezelStyle = .rounded
+        permission.keyEquivalent = "\r"
+        permissionButton = permission
+
+        let stack = NSStackView(views: [title, detail, angle, status, permission])
+        stack.orientation = .vertical
+        stack.alignment = .centerX
+        stack.spacing = 14
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        window.contentView?.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 28),
+            stack.trailingAnchor.constraint(equalTo: window.contentView!.trailingAnchor, constant: -28),
+            stack.centerYAnchor.constraint(equalTo: window.contentView!.centerYAnchor)
+        ])
+        controlWindow = window
+    }
+
+    private func showControlWindow() {
+        controlWindow?.center()
+        controlWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        refreshMenu()
+    }
+
     private func refreshMenu() {
         let allowed = DesktopCaptureService.hasPermission
         permissionItem?.title = allowed ? "屏幕录制权限已授予" : "授予屏幕录制权限…"
         permissionItem?.isEnabled = !allowed
         sensorItem?.title = sensor.status == .connected ? "传感器已连接" : "传感器不可用"
+        let sensorText = sensor.status == .connected ? "传感器已连接" : "正在连接传感器…"
+        windowStatusLabel?.stringValue = allowed ? "\(sensorText) · 屏幕录制权限已授予" : "\(sensorText) · 需要屏幕录制权限"
+        permissionButton?.isHidden = allowed
     }
 
     @objc private func toggleEnabled() {
@@ -143,9 +212,20 @@ final class AppController: NSObject, NSApplicationDelegate {
         state = FoldStateMachine()
     }
 
-    @objc private func requestCapturePermission() {
+    @objc func requestCapturePermission() {
         DesktopCaptureService.requestPermission()
         refreshMenu()
+        if !DesktopCaptureService.hasPermission {
+            let alert = NSAlert()
+            alert.messageText = "请允许 MacBook Duo 录制屏幕"
+            alert.informativeText = "在系统设置的“隐私与安全性 → 屏幕与系统音频录制”中启用 MacBook Duo，然后退出并重新打开应用。"
+            alert.addButton(withTitle: "打开系统设置")
+            alert.addButton(withTitle: "稍后")
+            if alert.runModal() == .alertFirstButtonReturn,
+               let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                NSWorkspace.shared.open(url)
+            }
+        }
     }
 
     @objc private func testSliderChanged(_ sender: NSSlider) {
