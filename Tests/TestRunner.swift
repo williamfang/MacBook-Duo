@@ -45,12 +45,18 @@ func runParameterTests() {
     let open = FoldParameters.make(angle: 85)
     expect(close(open.progress, 0), "trigger angle starts at zero progress")
     expect(close(open.blurRadius, 0), "trigger angle is sharp")
+    expect(close(open.blurLOD(atVerticalPosition: 0), 0), "trigger angle is sharp at the top edge")
     let middle = FoldParameters.make(angle: 50)
     expect(close(middle.progress, 0.5), "mid angle maps to half progress")
     expect(close(middle.contentScale, 1), "fold effect never changes screen-edge geometry")
+    let topBlur = middle.blurLOD(atVerticalPosition: 0)
+    let centerBlur = middle.blurLOD(atVerticalPosition: 0.5)
+    let bottomBlur = middle.blurLOD(atVerticalPosition: 1)
+    expect(topBlur > centerBlur && centerBlur > bottomBlur, "blur progresses smoothly from top edge downward")
     let closed = FoldParameters.make(angle: 15)
     expect(close(closed.progress, 1), "blackout angle completes progress")
     expect(closed.darkness > 0.9, "blackout angle is dark")
+    expect(close(closed.blurLOD(atVerticalPosition: 0), 5.5), "blackout angle reaches maximum blur at top")
 }
 
 func runCaptureDecisionTests() {

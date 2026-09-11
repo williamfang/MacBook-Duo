@@ -13,28 +13,26 @@ vertex VertexOut foldVertex(uint id [[vertex_id]]) {
 fragment float4 foldFragment(VertexOut in [[stage_in]],
                              texture2d<float> image [[texture(0)]],
                              constant Uniforms& u [[buffer(0)]]) {
-    constexpr sampler s(filter::linear, address::clamp_to_edge);
+    constexpr sampler s(min_filter::linear, mag_filter::linear,
+                        mip_filter::linear, address::clamp_to_edge);
     float2 uv = in.uv;
 
     // Keep every desktop pixel locked to the same screen coordinate. The physical
     // lid supplies the motion; software only changes the glass treatment.
     float2 sampleUV = uv;
 
-    float2 texel = 1.0 / float2(image.get_width(), image.get_height());
-    float radius = u.blur;
-    float2 dx = float2(texel.x * radius, 0);
-    float2 dy = float2(0, texel.y * radius);
-    float4 color = image.sample(s, sampleUV) * 0.28;
-    color += image.sample(s, sampleUV + dx) * 0.12;
-    color += image.sample(s, sampleUV - dx) * 0.12;
-    color += image.sample(s, sampleUV + dy) * 0.12;
-    color += image.sample(s, sampleUV - dy) * 0.12;
-    color += image.sample(s, sampleUV + dx + dy) * 0.06;
-    color += image.sample(s, sampleUV - dx - dy) * 0.06;
-    color += image.sample(s, sampleUV + dx - dy) * 0.06;
-    color += image.sample(s, sampleUV - dx + dy) * 0.06;
+    float coverage = smoothstep(-0.2, 0.2, u.progress - uv.y);
+    float onset = smoothstep(0.0, 0.35, u.progress);
+    float lod = u.blur * coverage * onset;
+    float2 texel = exp2(lod) / float2(image.get_width(), image.get_height()) * 0.55;
+    float4 color = image.sample(s, sampleUV, level(lod)) * 0.40;
+    color += image.sample(s, sampleUV + float2( texel.x,  texel.y), level(lod)) * 0.15;
+    color += image.sample(s, sampleUV + float2(-texel.x,  texel.y), level(lod)) * 0.15;
+    color += image.sample(s, sampleUV + float2( texel.x, -texel.y), level(lod)) * 0.15;
+    color += image.sample(s, sampleUV + float2(-texel.x, -texel.y), level(lod)) * 0.15;
 
     color.rgb = mix(color.rgb, float3(0.48, 0.70, 0.88), u.tint);
-    color.rgb *= 1.0 - u.darkness;
+    float localDarkness = u.darkness * mix(0.15, 1.0, coverage);
+    color.rgb *= 1.0 - localDarkness;
     return float4(color.rgb, 1);
 }

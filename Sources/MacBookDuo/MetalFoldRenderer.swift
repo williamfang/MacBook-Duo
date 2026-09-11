@@ -49,6 +49,7 @@ final class MetalFoldRenderer: NSObject, MTKViewDelegate {
     func setImage(_ image: CGImage) throws {
         texture = try textureLoader.newTexture(cgImage: image, options: [
             .SRGB: false,
+            .generateMipmaps: true,
             .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue)
         ])
     }
@@ -65,7 +66,7 @@ final class MetalFoldRenderer: NSObject, MTKViewDelegate {
               let texture else { return }
         var uniforms = Uniforms(
             progress: Float(parameters.progress),
-            blur: Float(parameters.blurRadius),
+            blur: 5.5,
             darkness: Float(parameters.darkness),
             tint: Float(parameters.glassTint),
             aspect: Float(view.drawableSize.width / max(view.drawableSize.height, 1))

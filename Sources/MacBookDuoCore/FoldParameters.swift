@@ -18,4 +18,16 @@ public struct FoldParameters: Equatable, Sendable {
             glassTint: sin(t * .pi) * 0.22
         )
     }
+
+    public func blurLOD(atVerticalPosition y: Double) -> Double {
+        let position = min(max(y, 0), 1)
+        let coverage = smoothstep(edge0: -0.2, edge1: 0.2, value: progress - position)
+        let onset = smoothstep(edge0: 0, edge1: 0.35, value: progress)
+        return 5.5 * coverage * onset
+    }
+
+    private func smoothstep(edge0: Double, edge1: Double, value: Double) -> Double {
+        let t = min(max((value - edge0) / (edge1 - edge0), 0), 1)
+        return t * t * (3 - 2 * t)
+    }
 }
