@@ -1,6 +1,8 @@
 # MacBook Duo
 
-MacBook Duo 是一个开源的原生 macOS 应用。它读取 MacBook 的真实屏幕角度，在屏幕低于设定角度时冻结内建显示器画面，并以 Metal 保持画面边缘和像素坐标不变。连续毛玻璃覆盖全屏，以宽渐变保持从上向下的方向感。
+MacBook Duo 是一个源码可见的原生 macOS 应用。它读取 MacBook 的真实屏幕角度，在屏幕低于设定角度时冻结内建显示器画面，并以 Metal 保持画面边缘和像素坐标不变。连续毛玻璃覆盖全屏，以宽渐变保持从上向下的方向感。
+
+如果这个项目对你有帮助，欢迎通过 [Ko-fi 支持 William Fang](https://ko-fi.com/williamfang)。
 
 ## 构建
 
@@ -47,4 +49,10 @@ MACBOOK_DUO_SIGNING_IDENTITY='Developer ID Application: Your Name (TEAMID)' ./bu
 
 ## 许可证
 
-本项目以 [MIT License](LICENSE) 开源。
+本项目采用自定义的[源码参考许可证](LICENSE)：
+
+- 个人、非商业学习和参考可以免费使用。
+- 分享代码或衍生作品时必须明确注明原作者 **William Fang** 及本项目地址。
+- 任何商业用途均须事先取得付费商业授权。
+
+商业授权及其他许可咨询：<william.fang@qq.com>
