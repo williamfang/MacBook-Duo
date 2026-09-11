@@ -9,3 +9,8 @@ public struct FoldAngleRange: Equatable, Sendable {
         self.complete = min(max(complete, 0), safeStart - 5)
     }
 }
+
+public enum EffectDefaults {
+    public static let foldRange = FoldAngleRange(start: 90, complete: 30)
+    public static let verticalDifferencePercent = 30.0
+}

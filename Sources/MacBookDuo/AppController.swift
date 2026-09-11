@@ -5,7 +5,11 @@ import MacBookDuoCore
 final class AppController: NSObject, NSApplicationDelegate {
     private let sensor = LidAngleService()
     private let overlay = OverlayWindowController()
-    private var state = FoldStateMachine(triggerAngle: 80, resetAngle: 87, blackoutAngle: 30)
+    private var state = FoldStateMachine(
+        triggerAngle: EffectDefaults.foldRange.start,
+        resetAngle: EffectDefaults.foldRange.reset,
+        blackoutAngle: EffectDefaults.foldRange.complete
+    )
     private var statusItem: NSStatusItem?
     private var angleItem: NSMenuItem?
     private var sensorItem: NSMenuItem?
@@ -30,19 +34,20 @@ final class AppController: NSObject, NSApplicationDelegate {
     private var verticalDifferencePercent: Double = {
         let defaults = UserDefaults.standard
         return defaults.object(forKey: "verticalDifferencePercent") == nil
-            ? 25
+            ? EffectDefaults.verticalDifferencePercent
             : min(max(defaults.double(forKey: "verticalDifferencePercent"), 0), 50)
     }()
     private var startAngle: Double = {
         let defaults = UserDefaults.standard
-        return defaults.object(forKey: "startAngle") == nil ? 80 : defaults.double(forKey: "startAngle")
+        return defaults.object(forKey: "startAngle") == nil ? EffectDefaults.foldRange.start : defaults.double(forKey: "startAngle")
     }()
     private var completeAngle: Double = {
         let defaults = UserDefaults.standard
-        return defaults.object(forKey: "completeAngle") == nil ? 30 : defaults.double(forKey: "completeAngle")
+        return defaults.object(forKey: "completeAngle") == nil ? EffectDefaults.foldRange.complete : defaults.double(forKey: "completeAngle")
     }()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        migrateDefaultsIfNeeded()
         configureMenu()
         configureControlWindow()
         overlay.setVerticalDifference(percent: verticalDifferencePercent)
@@ -55,6 +60,19 @@ final class AppController: NSObject, NSApplicationDelegate {
         }
         refreshMenu()
         showControlWindow()
+    }
+
+    private func migrateDefaultsIfNeeded() {
+        let defaults = UserDefaults.standard
+        guard defaults.integer(forKey: "settingsDefaultsVersion") < 2 else { return }
+
+        startAngle = EffectDefaults.foldRange.start
+        completeAngle = EffectDefaults.foldRange.complete
+        verticalDifferencePercent = EffectDefaults.verticalDifferencePercent
+        defaults.set(startAngle, forKey: "startAngle")
+        defaults.set(completeAngle, forKey: "completeAngle")
+        defaults.set(verticalDifferencePercent, forKey: "verticalDifferencePercent")
+        defaults.set(2, forKey: "settingsDefaultsVersion")
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

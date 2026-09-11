@@ -70,6 +70,9 @@ func runCaptureDecisionTests() {
 }
 
 func runFoldAngleRangeTests() {
+    expect(close(EffectDefaults.foldRange.start, 90), "default start angle is ninety degrees")
+    expect(close(EffectDefaults.foldRange.complete, 30), "default completion angle is thirty degrees")
+    expect(close(EffectDefaults.verticalDifferencePercent, 30), "default vertical blur difference is thirty percent")
     let defaults = FoldAngleRange(start: 80, complete: 30)
     expect(close(defaults.start, 80) && close(defaults.complete, 30), "valid angle range is preserved")
     expect(close(defaults.reset, 87), "reset angle keeps seven-degree hysteresis")

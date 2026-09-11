@@ -8,8 +8,8 @@ final class OverlayWindowController {
     private var window: NSWindow?
     private var renderer: MetalFoldRenderer?
     private var metalView: MTKView?
-    private var verticalDifferencePercent = 25.0
-    private var angleRange = FoldAngleRange(start: 80, complete: 30)
+    private var verticalDifferencePercent = EffectDefaults.verticalDifferencePercent
+    private var angleRange = EffectDefaults.foldRange
 
     var isVisible: Bool { window?.isVisible == true }
 

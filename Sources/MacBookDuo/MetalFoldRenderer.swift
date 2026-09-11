@@ -18,8 +18,8 @@ final class MetalFoldRenderer: NSObject, MTKViewDelegate {
     private let textureLoader: MTKTextureLoader
     private var texture: MTLTexture?
     private var parameters = FoldParameters.make(angle: 85)
-    private var verticalDifference: Float = 0.25
-    private var angleRange = FoldAngleRange(start: 80, complete: 30)
+    private var verticalDifference = Float(EffectDefaults.verticalDifferencePercent / 100)
+    private var angleRange = EffectDefaults.foldRange
 
     init?(view: MTKView) {
         guard let device = MTLCreateSystemDefaultDevice(),
