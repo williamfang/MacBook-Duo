@@ -19,6 +19,7 @@ final class MetalFoldRenderer: NSObject, MTKViewDelegate {
     private var texture: MTLTexture?
     private var parameters = FoldParameters.make(angle: 85)
     private var verticalDifference: Float = 0.25
+    private var angleRange = FoldAngleRange(start: 80, complete: 30)
 
     init?(view: MTKView) {
         guard let device = MTLCreateSystemDefaultDevice(),
@@ -56,7 +57,11 @@ final class MetalFoldRenderer: NSObject, MTKViewDelegate {
         ])
     }
 
-    func setAngle(_ angle: Double) { parameters = .make(angle: angle) }
+    func setAngle(_ angle: Double) {
+        parameters = .make(angle: angle, trigger: angleRange.start, blackout: angleRange.complete)
+    }
+
+    func setAngleRange(_ range: FoldAngleRange) { angleRange = range }
 
     func setVerticalDifference(percent: Double) {
         verticalDifference = Float(min(max(percent, 0), 50) / 100)

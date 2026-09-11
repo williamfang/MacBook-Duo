@@ -1,6 +1,7 @@
 import AppKit
 import MetalKit
 import QuartzCore
+import MacBookDuoCore
 
 @MainActor
 final class OverlayWindowController {
@@ -8,6 +9,7 @@ final class OverlayWindowController {
     private var renderer: MetalFoldRenderer?
     private var metalView: MTKView?
     private var verticalDifferencePercent = 25.0
+    private var angleRange = FoldAngleRange(start: 80, complete: 30)
 
     var isVisible: Bool { window?.isVisible == true }
 
@@ -39,6 +41,7 @@ final class OverlayWindowController {
             self.renderer = renderer
             self.metalView = view
             renderer.setVerticalDifference(percent: verticalDifferencePercent)
+            renderer.setAngleRange(angleRange)
         }
 
         do { try renderer?.setImage(image) } catch { return false }
@@ -63,6 +66,11 @@ final class OverlayWindowController {
     func setVerticalDifference(percent: Double) {
         verticalDifferencePercent = min(max(percent, 0), 50)
         renderer?.setVerticalDifference(percent: verticalDifferencePercent)
+    }
+
+    func setAngleRange(_ range: FoldAngleRange) {
+        angleRange = range
+        renderer?.setAngleRange(range)
     }
 
     func hide() {

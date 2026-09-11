@@ -69,11 +69,22 @@ func runCaptureDecisionTests() {
     expect(overlayDecision(for: .failed) == .hide, "capture failure fails open")
 }
 
+func runFoldAngleRangeTests() {
+    let defaults = FoldAngleRange(start: 80, complete: 30)
+    expect(close(defaults.start, 80) && close(defaults.complete, 30), "valid angle range is preserved")
+    expect(close(defaults.reset, 87), "reset angle keeps seven-degree hysteresis")
+    let crossed = FoldAngleRange(start: 20, complete: 40)
+    expect(close(crossed.start - crossed.complete, 5), "crossed handles retain a five-degree minimum gap")
+    let clamped = FoldAngleRange(start: 120, complete: -10)
+    expect(close(clamped.start, 90) && close(clamped.complete, 0), "angle range clamps to zero through ninety")
+}
+
 runStateTests()
 runFilterTests()
 runDecodingTests()
 runParameterTests()
 runCaptureDecisionTests()
+runFoldAngleRangeTests()
 if failures == 0 {
     print("PASS: all core tests")
 } else {

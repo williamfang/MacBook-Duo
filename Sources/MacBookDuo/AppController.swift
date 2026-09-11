@@ -5,7 +5,7 @@ import MacBookDuoCore
 final class AppController: NSObject, NSApplicationDelegate {
     private let sensor = LidAngleService()
     private let overlay = OverlayWindowController()
-    private var state = FoldStateMachine()
+    private var state = FoldStateMachine(triggerAngle: 80, resetAngle: 87, blackoutAngle: 30)
     private var statusItem: NSStatusItem?
     private var angleItem: NSMenuItem?
     private var sensorItem: NSMenuItem?
@@ -17,6 +17,10 @@ final class AppController: NSObject, NSApplicationDelegate {
     private var windowStatusLabel: NSTextField?
     private var permissionButton: NSButton?
     private var differenceValueLabel: NSTextField?
+    private var startAngleValueLabel: NSTextField?
+    private var completeAngleValueLabel: NSTextField?
+    private var startAngleSlider: NSSlider?
+    private var completeAngleSlider: NSSlider?
     private var isEnabled = true
     private var captureInFlight = false
     private var captureGeneration: UInt = 0
@@ -29,11 +33,20 @@ final class AppController: NSObject, NSApplicationDelegate {
             ? 25
             : min(max(defaults.double(forKey: "verticalDifferencePercent"), 0), 50)
     }()
+    private var startAngle: Double = {
+        let defaults = UserDefaults.standard
+        return defaults.object(forKey: "startAngle") == nil ? 80 : defaults.double(forKey: "startAngle")
+    }()
+    private var completeAngle: Double = {
+        let defaults = UserDefaults.standard
+        return defaults.object(forKey: "completeAngle") == nil ? 30 : defaults.double(forKey: "completeAngle")
+    }()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         configureMenu()
         configureControlWindow()
         overlay.setVerticalDifference(percent: verticalDifferencePercent)
+        applyAngleRange(start: startAngle, complete: completeAngle, persist: false)
         sensor.onAngle = { [weak self] angle in self?.receive(angle: angle) }
         sensor.onUnavailable = { [weak self] in self?.cancelOverlay() }
         sensor.start()
@@ -89,7 +102,8 @@ final class AppController: NSObject, NSApplicationDelegate {
             }
             do {
                 let image = try await DesktopCaptureService.captureBuiltInDisplay()
-                guard isEnabled, generation == captureGeneration, latestAngle <= 92 else { return }
+                guard isEnabled, generation == captureGeneration,
+                      latestAngle <= FoldAngleRange(start: startAngle, complete: completeAngle).reset else { return }
                 if !overlay.show(image: image, angle: latestAngle) {
                     overlay.hide()
                 }
@@ -134,7 +148,7 @@ final class AppController: NSObject, NSApplicationDelegate {
 
         let sliderItem = NSMenuItem()
         let container = NSView(frame: NSRect(x: 0, y: 0, width: 240, height: 42))
-        let slider = NSSlider(value: 85, minValue: 15, maxValue: 85, target: self, action: #selector(testSliderChanged(_:)))
+        let slider = NSSlider(value: startAngle, minValue: completeAngle, maxValue: startAngle, target: self, action: #selector(testSliderChanged(_:)))
         slider.frame = NSRect(x: 16, y: 8, width: 208, height: 26)
         slider.toolTip = "测试折叠角度（松开后恢复）"
         container.addSubview(slider)
@@ -152,7 +166,7 @@ final class AppController: NSObject, NSApplicationDelegate {
 
     private func configureControlWindow() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 440, height: 340),
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 500),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
@@ -164,7 +178,7 @@ final class AppController: NSObject, NSApplicationDelegate {
         title.font = .systemFont(ofSize: 24, weight: .semibold)
         title.alignment = .center
 
-        let detail = NSTextField(wrappingLabelWithString: "屏幕低于 85° 时自动冻结桌面并启动折叠效果，重新打开到 92° 以上恢复。")
+        let detail = NSTextField(wrappingLabelWithString: "屏幕进入设定角度区间时自动冻结桌面，并同步增加模糊与暗度。")
         detail.alignment = .center
         detail.textColor = .secondaryLabelColor
 
@@ -196,7 +210,33 @@ final class AppController: NSObject, NSApplicationDelegate {
         differenceSlider.isContinuous = true
         differenceSlider.widthAnchor.constraint(equalToConstant: 300).isActive = true
 
-        let stack = NSStackView(views: [title, detail, angle, status, differenceHeader, differenceSlider, permission])
+        let startTitle = NSTextField(labelWithString: "开始变化角度")
+        let startValue = NSTextField(labelWithString: "\(Int(startAngle))°")
+        startValue.font = .monospacedDigitSystemFont(ofSize: 13, weight: .regular)
+        startAngleValueLabel = startValue
+        let startHeader = NSStackView(views: [startTitle, startValue])
+        startHeader.orientation = .horizontal
+        startHeader.distribution = .fill
+        startHeader.widthAnchor.constraint(equalToConstant: 300).isActive = true
+        let startSlider = NSSlider(value: startAngle, minValue: 5, maxValue: 90, target: self, action: #selector(startAngleChanged(_:)))
+        startSlider.isContinuous = true
+        startSlider.widthAnchor.constraint(equalToConstant: 300).isActive = true
+        startAngleSlider = startSlider
+
+        let completeTitle = NSTextField(labelWithString: "完全模糊与变暗角度")
+        let completeValue = NSTextField(labelWithString: "\(Int(completeAngle))°")
+        completeValue.font = .monospacedDigitSystemFont(ofSize: 13, weight: .regular)
+        completeAngleValueLabel = completeValue
+        let completeHeader = NSStackView(views: [completeTitle, completeValue])
+        completeHeader.orientation = .horizontal
+        completeHeader.distribution = .fill
+        completeHeader.widthAnchor.constraint(equalToConstant: 300).isActive = true
+        let completeSlider = NSSlider(value: completeAngle, minValue: 0, maxValue: max(startAngle - 5, 0), target: self, action: #selector(completeAngleChanged(_:)))
+        completeSlider.isContinuous = true
+        completeSlider.widthAnchor.constraint(equalToConstant: 300).isActive = true
+        completeAngleSlider = completeSlider
+
+        let stack = NSStackView(views: [title, detail, angle, status, startHeader, startSlider, completeHeader, completeSlider, differenceHeader, differenceSlider, permission])
         stack.orientation = .vertical
         stack.alignment = .centerX
         stack.spacing = 14
@@ -231,7 +271,7 @@ final class AppController: NSObject, NSApplicationDelegate {
         isEnabled.toggle()
         enableItem?.state = isEnabled ? .on : .off
         if !isEnabled { overlay.hide() }
-        state = FoldStateMachine()
+        state = makeStateMachine()
     }
 
     @objc func requestCapturePermission() {
@@ -271,11 +311,44 @@ final class AppController: NSObject, NSApplicationDelegate {
         overlay.setVerticalDifference(percent: verticalDifferencePercent)
     }
 
+    @objc private func startAngleChanged(_ sender: NSSlider) {
+        applyAngleRange(start: sender.doubleValue, complete: completeAngle, persist: true)
+    }
+
+    @objc private func completeAngleChanged(_ sender: NSSlider) {
+        applyAngleRange(start: startAngle, complete: sender.doubleValue, persist: true)
+    }
+
+    private func applyAngleRange(start: Double, complete: Double, persist: Bool) {
+        let range = FoldAngleRange(start: start, complete: complete)
+        startAngle = range.start
+        completeAngle = range.complete
+        state = makeStateMachine()
+        overlay.setAngleRange(range)
+        startAngleSlider?.doubleValue = range.start
+        completeAngleSlider?.maxValue = range.start - 5
+        completeAngleSlider?.doubleValue = range.complete
+        slider?.minValue = range.complete
+        slider?.maxValue = range.start
+        slider?.doubleValue = range.start
+        startAngleValueLabel?.stringValue = "\(Int(range.start.rounded()))°"
+        completeAngleValueLabel?.stringValue = "\(Int(range.complete.rounded()))°"
+        if persist {
+            UserDefaults.standard.set(range.start, forKey: "startAngle")
+            UserDefaults.standard.set(range.complete, forKey: "completeAngle")
+        }
+    }
+
+    private func makeStateMachine() -> FoldStateMachine {
+        let range = FoldAngleRange(start: startAngle, complete: completeAngle)
+        return FoldStateMachine(triggerAngle: range.start, resetAngle: range.reset, blackoutAngle: range.complete)
+    }
+
     private func cancelOverlay() {
         captureGeneration &+= 1
         captureInFlight = false
         overlay.hide()
-        state = FoldStateMachine()
+        state = makeStateMachine()
     }
 
     @objc private func quitApp() { NSApp.terminate(nil) }
