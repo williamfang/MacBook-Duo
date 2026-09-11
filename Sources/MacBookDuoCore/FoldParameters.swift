@@ -19,10 +19,11 @@ public struct FoldParameters: Equatable, Sendable {
         )
     }
 
-    public func blurLOD(atVerticalPosition y: Double) -> Double {
+    public func blurLOD(atVerticalPosition y: Double, verticalDifferencePercent: Double = 25) -> Double {
         let position = min(max(y, 0), 1)
+        let difference = min(max(verticalDifferencePercent, 0), 50) / 100
         let onset = smoothstep(edge0: 0, edge1: 0.35, value: progress)
-        let verticalStrength = 1 - 0.25 * smoothstep(edge0: 0, edge1: 1, value: position)
+        let verticalStrength = 1 - difference * smoothstep(edge0: 0, edge1: 1, value: position)
         return 5.5 * verticalStrength * onset
     }
 

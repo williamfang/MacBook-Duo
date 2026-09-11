@@ -2,7 +2,7 @@
 using namespace metal;
 
 struct VertexOut { float4 position [[position]]; float2 uv; };
-struct Uniforms { float progress; float blur; float darkness; float tint; float aspect; };
+struct Uniforms { float progress; float blur; float darkness; float tint; float aspect; float verticalDifference; };
 
 vertex VertexOut foldVertex(uint id [[vertex_id]]) {
     float2 positions[3] = { float2(-1,-1), float2(3,-1), float2(-1,3) };
@@ -22,7 +22,7 @@ fragment float4 foldFragment(VertexOut in [[stage_in]],
     float2 sampleUV = uv;
 
     float onset = smoothstep(0.0, 0.35, u.progress);
-    float verticalStrength = mix(1.0, 0.75, smoothstep(0.0, 1.0, uv.y));
+    float verticalStrength = mix(1.0, 1.0 - u.verticalDifference, smoothstep(0.0, 1.0, uv.y));
     float lod = u.blur * verticalStrength * onset;
     float2 texel = exp2(lod) / float2(image.get_width(), image.get_height()) * 0.55;
     float4 color = image.sample(s, sampleUV, level(lod)) * 0.40;

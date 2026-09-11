@@ -1,10 +1,13 @@
 import AppKit
 import MetalKit
+import QuartzCore
 
 @MainActor
 final class OverlayWindowController {
     private var window: NSWindow?
     private var renderer: MetalFoldRenderer?
+    private var metalView: MTKView?
+    private var verticalDifferencePercent = 25.0
 
     var isVisible: Bool { window?.isVisible == true }
 
@@ -34,16 +37,33 @@ final class OverlayWindowController {
             guard let renderer = MetalFoldRenderer(view: view) else { return false }
             self.window = window
             self.renderer = renderer
+            self.metalView = view
+            renderer.setVerticalDifference(percent: verticalDifferencePercent)
         }
 
         do { try renderer?.setImage(image) } catch { return false }
         renderer?.setAngle(angle)
         window?.setFrame(screen.frame, display: true)
+        let wasVisible = window?.isVisible == true
+        if !wasVisible { window?.alphaValue = 0 }
+        metalView?.draw()
         window?.orderFrontRegardless()
+        if !wasVisible {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.12
+                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                window?.animator().alphaValue = 1
+            }
+        }
         return true
     }
 
     func update(angle: Double) { renderer?.setAngle(angle) }
+
+    func setVerticalDifference(percent: Double) {
+        verticalDifferencePercent = min(max(percent, 0), 50)
+        renderer?.setVerticalDifference(percent: verticalDifferencePercent)
+    }
 
     func hide() {
         window?.orderOut(nil)

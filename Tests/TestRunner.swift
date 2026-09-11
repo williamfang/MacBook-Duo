@@ -49,15 +49,17 @@ func runParameterTests() {
     let middle = FoldParameters.make(angle: 50)
     expect(close(middle.progress, 0.5), "mid angle maps to half progress")
     expect(close(middle.contentScale, 1), "fold effect never changes screen-edge geometry")
-    let topBlur = middle.blurLOD(atVerticalPosition: 0)
-    let centerBlur = middle.blurLOD(atVerticalPosition: 0.5)
-    let bottomBlur = middle.blurLOD(atVerticalPosition: 1)
+    let topBlur = middle.blurLOD(atVerticalPosition: 0, verticalDifferencePercent: 25)
+    let centerBlur = middle.blurLOD(atVerticalPosition: 0.5, verticalDifferencePercent: 25)
+    let bottomBlur = middle.blurLOD(atVerticalPosition: 1, verticalDifferencePercent: 25)
     expect(topBlur > centerBlur && centerBlur > bottomBlur, "blur progresses smoothly from top edge downward")
     expect(bottomBlur / topBlur >= 0.70 && bottomBlur / topBlur <= 0.80, "top-to-bottom blur difference stays near 25 percent")
+    expect(close(middle.blurLOD(atVerticalPosition: 0, verticalDifferencePercent: 0), middle.blurLOD(atVerticalPosition: 1, verticalDifferencePercent: 0)), "zero percent makes blur uniform")
+    expect(close(middle.blurLOD(atVerticalPosition: 1, verticalDifferencePercent: 50) / middle.blurLOD(atVerticalPosition: 0, verticalDifferencePercent: 50), 0.5), "fifty percent halves bottom blur strength")
     let closed = FoldParameters.make(angle: 15)
     expect(close(closed.progress, 1), "blackout angle completes progress")
     expect(closed.darkness > 0.9, "blackout angle is dark")
-    expect(close(closed.blurLOD(atVerticalPosition: 0), 5.5), "blackout angle reaches maximum blur at top")
+    expect(close(closed.blurLOD(atVerticalPosition: 0, verticalDifferencePercent: 25), 5.5), "blackout angle reaches maximum blur at top")
 }
 
 func runCaptureDecisionTests() {

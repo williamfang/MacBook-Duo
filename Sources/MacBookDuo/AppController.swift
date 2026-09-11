@@ -16,16 +16,24 @@ final class AppController: NSObject, NSApplicationDelegate {
     private var windowAngleLabel: NSTextField?
     private var windowStatusLabel: NSTextField?
     private var permissionButton: NSButton?
+    private var differenceValueLabel: NSTextField?
     private var isEnabled = true
     private var captureInFlight = false
     private var captureGeneration: UInt = 0
     private var latestAngle = 120.0
     private var escapeMonitor: Any?
     private var testHideTimer: Timer?
+    private var verticalDifferencePercent: Double = {
+        let defaults = UserDefaults.standard
+        return defaults.object(forKey: "verticalDifferencePercent") == nil
+            ? 25
+            : min(max(defaults.double(forKey: "verticalDifferencePercent"), 0), 50)
+    }()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         configureMenu()
         configureControlWindow()
+        overlay.setVerticalDifference(percent: verticalDifferencePercent)
         sensor.onAngle = { [weak self] angle in self?.receive(angle: angle) }
         sensor.onUnavailable = { [weak self] in self?.cancelOverlay() }
         sensor.start()
@@ -144,7 +152,7 @@ final class AppController: NSObject, NSApplicationDelegate {
 
     private func configureControlWindow() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 440, height: 270),
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 340),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
@@ -174,7 +182,21 @@ final class AppController: NSObject, NSApplicationDelegate {
         permission.keyEquivalent = "\r"
         permissionButton = permission
 
-        let stack = NSStackView(views: [title, detail, angle, status, permission])
+        let differenceTitle = NSTextField(labelWithString: "上下模糊差异")
+        differenceTitle.font = .systemFont(ofSize: 13, weight: .medium)
+        let differenceValue = NSTextField(labelWithString: "\(Int(verticalDifferencePercent))%")
+        differenceValue.font = .monospacedDigitSystemFont(ofSize: 13, weight: .regular)
+        differenceValue.alignment = .right
+        differenceValueLabel = differenceValue
+        let differenceHeader = NSStackView(views: [differenceTitle, differenceValue])
+        differenceHeader.orientation = .horizontal
+        differenceHeader.distribution = .fill
+        differenceHeader.widthAnchor.constraint(equalToConstant: 300).isActive = true
+        let differenceSlider = NSSlider(value: verticalDifferencePercent, minValue: 0, maxValue: 50, target: self, action: #selector(verticalDifferenceChanged(_:)))
+        differenceSlider.isContinuous = true
+        differenceSlider.widthAnchor.constraint(equalToConstant: 300).isActive = true
+
+        let stack = NSStackView(views: [title, detail, angle, status, differenceHeader, differenceSlider, permission])
         stack.orientation = .vertical
         stack.alignment = .centerX
         stack.spacing = 14
@@ -240,6 +262,13 @@ final class AppController: NSObject, NSApplicationDelegate {
             latestAngle = angle
             captureAndShow()
         }
+    }
+
+    @objc private func verticalDifferenceChanged(_ sender: NSSlider) {
+        verticalDifferencePercent = sender.doubleValue
+        differenceValueLabel?.stringValue = "\(Int(sender.doubleValue.rounded()))%"
+        UserDefaults.standard.set(verticalDifferencePercent, forKey: "verticalDifferencePercent")
+        overlay.setVerticalDifference(percent: verticalDifferencePercent)
     }
 
     private func cancelOverlay() {

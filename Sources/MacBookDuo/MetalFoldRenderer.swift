@@ -9,6 +9,7 @@ final class MetalFoldRenderer: NSObject, MTKViewDelegate {
         var darkness: Float
         var tint: Float
         var aspect: Float
+        var verticalDifference: Float
     }
 
     private let device: MTLDevice
@@ -17,6 +18,7 @@ final class MetalFoldRenderer: NSObject, MTKViewDelegate {
     private let textureLoader: MTKTextureLoader
     private var texture: MTLTexture?
     private var parameters = FoldParameters.make(angle: 85)
+    private var verticalDifference: Float = 0.25
 
     init?(view: MTKView) {
         guard let device = MTLCreateSystemDefaultDevice(),
@@ -56,6 +58,10 @@ final class MetalFoldRenderer: NSObject, MTKViewDelegate {
 
     func setAngle(_ angle: Double) { parameters = .make(angle: angle) }
 
+    func setVerticalDifference(percent: Double) {
+        verticalDifference = Float(min(max(percent, 0), 50) / 100)
+    }
+
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
 
     func draw(in view: MTKView) {
@@ -69,7 +75,8 @@ final class MetalFoldRenderer: NSObject, MTKViewDelegate {
             blur: 5.5,
             darkness: Float(parameters.darkness),
             tint: Float(parameters.glassTint),
-            aspect: Float(view.drawableSize.width / max(view.drawableSize.height, 1))
+            aspect: Float(view.drawableSize.width / max(view.drawableSize.height, 1)),
+            verticalDifference: verticalDifference
         )
         encoder.setRenderPipelineState(pipeline)
         encoder.setFragmentTexture(texture, index: 0)

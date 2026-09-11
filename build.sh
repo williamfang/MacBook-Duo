@@ -27,5 +27,11 @@ mkdir -p "$app_dir/Contents/Frameworks"
 cp "$build_dir/libMacBookDuoCore.dylib" "$app_dir/Contents/Frameworks/"
 cp "$project_dir/Resources/Info.plist" "$app_dir/Contents/Info.plist"
 cp "$project_dir/Sources/MacBookDuo/Shaders.metal" "$app_dir/Contents/Resources/Shaders.metal"
-codesign --force --deep --sign - "$app_dir"
+signing_identity="Developer ID Application: Wei Fang (5G5PU6XR9T)"
+if security find-identity -v -p codesigning | grep -Fq "$signing_identity"; then
+  codesign --force --sign "$signing_identity" --timestamp=none "$app_dir/Contents/Frameworks/libMacBookDuoCore.dylib"
+  codesign --force --deep --options runtime --sign "$signing_identity" --timestamp=none "$app_dir"
+else
+  codesign --force --deep --sign - "$app_dir"
+fi
 echo "$app_dir"
