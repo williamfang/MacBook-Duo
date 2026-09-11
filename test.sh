@@ -15,3 +15,10 @@ swiftc -sdk "$sdk_path" -module-cache-path "$module_cache" \
   -I "$build_dir" -L "$build_dir" -lMacBookDuoCore \
   "$project_dir/Tests/TestRunner.swift" -o "$build_dir/CoreTests"
 DYLD_LIBRARY_PATH="$build_dir" "$build_dir/CoreTests"
+
+icon_file="$project_dir/Resources/AppIcon.icns"
+[[ -f "$icon_file" ]] || { echo "FAIL: missing AppIcon.icns" >&2; exit 1; }
+[[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' "$project_dir/Resources/Info.plist")" == "AppIcon" ]] || {
+  echo "FAIL: Info.plist does not bind AppIcon" >&2
+  exit 1
+}

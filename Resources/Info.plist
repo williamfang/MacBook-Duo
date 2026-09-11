@@ -5,6 +5,7 @@
     <key>CFBundleDisplayName</key><string>MacBook Duo</string>
     <key>CFBundleExecutable</key><string>MacBookDuo</string>
     <key>CFBundleIdentifier</key><string>com.local.MacBookDuo</string>
+    <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
     <key>CFBundleName</key><string>MacBook Duo</string>
     <key>CFBundlePackageType</key><string>APPL</string>

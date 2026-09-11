@@ -13,6 +13,14 @@ MacBook Duo 是一个开源的原生 macOS 应用。它读取 MacBook 的真实�
 
 应用生成在 `.build/MacBook Duo.app`。
 
+应用图标源文件为 `Resources/AppIcon-master.png`。需要重新生成 `.icns` 时运行：
+
+```bash
+swift -sdk /Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk \
+  -module-cache-path .build/module-cache \
+  Tools/generate-icon.swift Resources/AppIcon-master.png Resources/AppIcon.icns
+```
+
 ## 使用
 
 1. 打开应用；控制窗口、Dock 图标和菜单栏的 `Duo` 图标都会出现。

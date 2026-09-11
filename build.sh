@@ -26,6 +26,7 @@ swiftc -sdk "$sdk_path" -module-cache-path "$module_cache" -O -swift-version 5 \
 mkdir -p "$app_dir/Contents/Frameworks"
 cp "$build_dir/libMacBookDuoCore.dylib" "$app_dir/Contents/Frameworks/"
 cp "$project_dir/Resources/Info.plist" "$app_dir/Contents/Info.plist"
+cp "$project_dir/Resources/AppIcon.icns" "$app_dir/Contents/Resources/AppIcon.icns"
 cp "$project_dir/Sources/MacBookDuo/Shaders.metal" "$app_dir/Contents/Resources/Shaders.metal"
 signing_identity="${MACBOOK_DUO_SIGNING_IDENTITY:-}"
 if [[ -n "$signing_identity" ]] && security find-identity -v -p codesigning | grep -Fq "$signing_identity"; then
