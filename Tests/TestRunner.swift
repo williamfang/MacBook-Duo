@@ -82,12 +82,23 @@ func runFoldAngleRangeTests() {
     expect(close(clamped.start, 90) && close(clamped.complete, 0), "angle range clamps to zero through ninety")
 }
 
+func runPerspectiveTests() {
+    expect(EffectDefaults.perspectiveEnabled, "perspective deformation defaults to enabled")
+    expect(close(PerspectiveWarp.amount(progress: 0.7, enabled: false), 0), "disabled perspective keeps geometry unchanged")
+    expect(close(PerspectiveWarp.amount(progress: 0, enabled: true), 0), "perspective begins without a visual jump")
+    let middle = PerspectiveWarp.amount(progress: 0.5, enabled: true)
+    let closed = PerspectiveWarp.amount(progress: 1, enabled: true)
+    expect(middle > 0 && middle < closed, "perspective grows smoothly with fold progress")
+    expect(close(closed, PerspectiveWarp.maximumAmount), "perspective is capped at a comfortable maximum")
+}
+
 runStateTests()
 runFilterTests()
 runDecodingTests()
 runParameterTests()
 runCaptureDecisionTests()
 runFoldAngleRangeTests()
+runPerspectiveTests()
 if failures == 0 {
     print("PASS: all core tests")
 } else {

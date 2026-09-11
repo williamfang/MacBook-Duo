@@ -10,6 +10,7 @@ final class OverlayWindowController {
     private var metalView: MTKView?
     private var verticalDifferencePercent = EffectDefaults.verticalDifferencePercent
     private var angleRange = EffectDefaults.foldRange
+    private var perspectiveEnabled = EffectDefaults.perspectiveEnabled
 
     var isVisible: Bool { window?.isVisible == true }
 
@@ -42,6 +43,7 @@ final class OverlayWindowController {
             self.metalView = view
             renderer.setVerticalDifference(percent: verticalDifferencePercent)
             renderer.setAngleRange(angleRange)
+            renderer.setPerspectiveEnabled(perspectiveEnabled)
         }
 
         do { try renderer?.setImage(image) } catch { return false }
@@ -71,6 +73,11 @@ final class OverlayWindowController {
     func setAngleRange(_ range: FoldAngleRange) {
         angleRange = range
         renderer?.setAngleRange(range)
+    }
+
+    func setPerspectiveEnabled(_ enabled: Bool) {
+        perspectiveEnabled = enabled
+        renderer?.setPerspectiveEnabled(enabled)
     }
 
     func hide() {

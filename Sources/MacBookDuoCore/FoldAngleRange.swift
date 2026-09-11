@@ -13,4 +13,5 @@ public struct FoldAngleRange: Equatable, Sendable {
 public enum EffectDefaults {
     public static let foldRange = FoldAngleRange(start: 90, complete: 30)
     public static let verticalDifferencePercent = 30.0
+    public static let perspectiveEnabled = true
 }

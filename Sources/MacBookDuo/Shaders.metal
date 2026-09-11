@@ -2,7 +2,7 @@
 using namespace metal;
 
 struct VertexOut { float4 position [[position]]; float2 uv; };
-struct Uniforms { float progress; float blur; float darkness; float tint; float aspect; float verticalDifference; };
+struct Uniforms { float progress; float blur; float darkness; float tint; float aspect; float verticalDifference; float perspective; };
 
 vertex VertexOut foldVertex(uint id [[vertex_id]]) {
     float2 positions[3] = { float2(-1,-1), float2(3,-1), float2(-1,3) };
@@ -17,9 +17,13 @@ fragment float4 foldFragment(VertexOut in [[stage_in]],
                         mip_filter::linear, address::clamp_to_edge);
     float2 uv = in.uv;
 
-    // Keep every desktop pixel locked to the same screen coordinate. The physical
-    // lid supplies the motion; software only changes the glass treatment.
     float2 sampleUV = uv;
+    float topWeight = 1.0 - smoothstep(0.0, 1.0, uv.y);
+    float horizontalScale = 1.0 - u.perspective * 0.65 * topWeight;
+    sampleUV.x = 0.5 + (uv.x - 0.5) / horizontalScale;
+    float verticalCompression = u.perspective * 0.75;
+    sampleUV.y = (uv.y - verticalCompression) / (1.0 - verticalCompression);
+    sampleUV = clamp(sampleUV, float2(0.0), float2(1.0));
 
     float onset = smoothstep(0.0, 0.35, u.progress);
     float verticalStrength = mix(1.0, 1.0 - u.verticalDifference, smoothstep(0.0, 1.0, uv.y));

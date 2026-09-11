@@ -10,6 +10,7 @@ final class MetalFoldRenderer: NSObject, MTKViewDelegate {
         var tint: Float
         var aspect: Float
         var verticalDifference: Float
+        var perspective: Float
     }
 
     private let device: MTLDevice
@@ -20,6 +21,7 @@ final class MetalFoldRenderer: NSObject, MTKViewDelegate {
     private var parameters = FoldParameters.make(angle: 85)
     private var verticalDifference = Float(EffectDefaults.verticalDifferencePercent / 100)
     private var angleRange = EffectDefaults.foldRange
+    private var perspectiveEnabled = EffectDefaults.perspectiveEnabled
 
     init?(view: MTKView) {
         guard let device = MTLCreateSystemDefaultDevice(),
@@ -67,6 +69,10 @@ final class MetalFoldRenderer: NSObject, MTKViewDelegate {
         verticalDifference = Float(min(max(percent, 0), 50) / 100)
     }
 
+    func setPerspectiveEnabled(_ enabled: Bool) {
+        perspectiveEnabled = enabled
+    }
+
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
 
     func draw(in view: MTKView) {
@@ -81,7 +87,8 @@ final class MetalFoldRenderer: NSObject, MTKViewDelegate {
             darkness: Float(parameters.darkness),
             tint: Float(parameters.glassTint),
             aspect: Float(view.drawableSize.width / max(view.drawableSize.height, 1)),
-            verticalDifference: verticalDifference
+            verticalDifference: verticalDifference,
+            perspective: Float(PerspectiveWarp.amount(progress: parameters.progress, enabled: perspectiveEnabled))
         )
         encoder.setRenderPipelineState(pipeline)
         encoder.setFragmentTexture(texture, index: 0)

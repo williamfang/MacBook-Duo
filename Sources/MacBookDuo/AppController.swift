@@ -25,6 +25,12 @@ final class AppController: NSObject, NSApplicationDelegate {
     private var completeAngleValueLabel: NSTextField?
     private var startAngleSlider: NSSlider?
     private var completeAngleSlider: NSSlider?
+    private var perspectiveEnabled: Bool = {
+        let defaults = UserDefaults.standard
+        return defaults.object(forKey: "perspectiveEnabled") == nil
+            ? EffectDefaults.perspectiveEnabled
+            : defaults.bool(forKey: "perspectiveEnabled")
+    }()
     private var isEnabled = true
     private var captureInFlight = false
     private var captureGeneration: UInt = 0
@@ -51,6 +57,7 @@ final class AppController: NSObject, NSApplicationDelegate {
         configureMenu()
         configureControlWindow()
         overlay.setVerticalDifference(percent: verticalDifferencePercent)
+        overlay.setPerspectiveEnabled(perspectiveEnabled)
         applyAngleRange(start: startAngle, complete: completeAngle, persist: false)
         sensor.onAngle = { [weak self] angle in self?.receive(angle: angle) }
         sensor.onUnavailable = { [weak self] in self?.cancelOverlay() }
@@ -184,7 +191,7 @@ final class AppController: NSObject, NSApplicationDelegate {
 
     private func configureControlWindow() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 440, height: 500),
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 540),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
@@ -254,7 +261,15 @@ final class AppController: NSObject, NSApplicationDelegate {
         completeSlider.widthAnchor.constraint(equalToConstant: 300).isActive = true
         completeAngleSlider = completeSlider
 
-        let stack = NSStackView(views: [title, detail, angle, status, startHeader, startSlider, completeHeader, completeSlider, differenceHeader, differenceSlider, permission])
+        let perspectiveToggle = NSButton(
+            checkboxWithTitle: "启用透视变形",
+            target: self,
+            action: #selector(perspectiveChanged(_:))
+        )
+        perspectiveToggle.state = perspectiveEnabled ? .on : .off
+        perspectiveToggle.toolTip = "模拟屏幕绕底部铰链折叠；关闭后只保留模糊与暗度"
+
+        let stack = NSStackView(views: [title, detail, angle, status, startHeader, startSlider, completeHeader, completeSlider, differenceHeader, differenceSlider, perspectiveToggle, permission])
         stack.orientation = .vertical
         stack.alignment = .centerX
         stack.spacing = 14
@@ -327,6 +342,12 @@ final class AppController: NSObject, NSApplicationDelegate {
         differenceValueLabel?.stringValue = "\(Int(sender.doubleValue.rounded()))%"
         UserDefaults.standard.set(verticalDifferencePercent, forKey: "verticalDifferencePercent")
         overlay.setVerticalDifference(percent: verticalDifferencePercent)
+    }
+
+    @objc private func perspectiveChanged(_ sender: NSButton) {
+        perspectiveEnabled = sender.state == .on
+        UserDefaults.standard.set(perspectiveEnabled, forKey: "perspectiveEnabled")
+        overlay.setPerspectiveEnabled(perspectiveEnabled)
     }
 
     @objc private func startAngleChanged(_ sender: NSSlider) {
