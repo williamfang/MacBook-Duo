@@ -18,12 +18,27 @@ fragment float4 foldFragment(VertexOut in [[stage_in]],
     float2 uv = in.uv;
 
     float2 sampleUV = uv;
-    float topWeight = 1.0 - smoothstep(0.0, 1.0, uv.y);
-    float horizontalScale = 1.0 - u.perspective * 0.65 * topWeight;
-    sampleUV.x = 0.5 + (uv.x - 0.5) / horizontalScale;
-    float verticalCompression = u.perspective * 0.75;
-    sampleUV.y = (uv.y - verticalCompression) / (1.0 - verticalCompression);
-    sampleUV = clamp(sampleUV, float2(0.0), float2(1.0));
+    float panelMask = 0.0;
+    if (u.perspective > 0.0001) {
+        float verticalCompression = u.perspective * 0.90;
+        float panelY = clamp((uv.y - verticalCompression) / (1.0 - verticalCompression), 0.0, 1.0);
+        float topInset = u.perspective * 0.55;
+        float halfWidth = mix(0.5 - topInset, 0.5, panelY);
+        float leftEdge = 0.5 - halfWidth;
+        float rightEdge = 0.5 + halfWidth;
+        float feather = 0.006 + u.perspective * 0.025;
+
+        float verticalMask = smoothstep(verticalCompression - feather, verticalCompression + feather, uv.y);
+        float leftMask = smoothstep(leftEdge - feather, leftEdge + feather, uv.x);
+        float rightMask = 1.0 - smoothstep(rightEdge - feather, rightEdge + feather, uv.x);
+        panelMask = verticalMask * leftMask * rightMask;
+
+        float2 warpedUV = float2(
+            clamp((uv.x - leftEdge) / max(rightEdge - leftEdge, 0.001), 0.0, 1.0),
+            panelY
+        );
+        sampleUV = mix(uv, warpedUV, panelMask);
+    }
 
     float onset = smoothstep(0.0, 0.35, u.progress);
     float verticalStrength = mix(1.0, 1.0 - u.verticalDifference, smoothstep(0.0, 1.0, uv.y));
@@ -36,6 +51,9 @@ fragment float4 foldFragment(VertexOut in [[stage_in]],
     color += image.sample(s, sampleUV + float2(-texel.x, -texel.y), level(lod)) * 0.15;
 
     color.rgb = mix(color.rgb, float3(0.48, 0.70, 0.88), u.tint);
+    float blackBackground = smoothstep(0.0, 0.025, u.perspective);
+    float panelVisibility = mix(1.0, panelMask, blackBackground);
+    color.rgb *= panelVisibility;
     float blackoutConvergence = smoothstep(0.82, 1.0, u.progress);
     float localDarkness = u.darkness * mix(verticalStrength, 1.0, blackoutConvergence);
     color.rgb *= 1.0 - localDarkness;

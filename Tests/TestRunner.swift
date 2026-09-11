@@ -85,10 +85,13 @@ func runFoldAngleRangeTests() {
 func runPerspectiveTests() {
     expect(EffectDefaults.perspectiveEnabled, "perspective deformation defaults to enabled")
     expect(close(PerspectiveWarp.amount(progress: 0.7, enabled: false), 0), "disabled perspective keeps geometry unchanged")
+    expect(close(PerspectiveWarp.backgroundOpacity(progress: 0.7, enabled: false), 0), "disabled perspective never adds a black background")
     expect(close(PerspectiveWarp.amount(progress: 0, enabled: true), 0), "perspective begins without a visual jump")
+    expect(PerspectiveWarp.backgroundOpacity(progress: 0.5, enabled: true) > 0.9, "perspective uses a black background behind the panel")
     let middle = PerspectiveWarp.amount(progress: 0.5, enabled: true)
     let closed = PerspectiveWarp.amount(progress: 1, enabled: true)
     expect(middle > 0 && middle < closed, "perspective grows smoothly with fold progress")
+    expect(middle >= 0.14, "perspective is clearly visible at the middle of the fold range")
     expect(close(closed, PerspectiveWarp.maximumAmount), "perspective is capped at a comfortable maximum")
 }
 
